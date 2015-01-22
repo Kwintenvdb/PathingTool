@@ -1,0 +1,101 @@
+﻿<Window x:Class="PathingTool.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:PathingTool.Views"
+        xmlns:helpers="clr-namespace:PathingTool.Helpers"
+        Title="PathingTool" Height="450" Width="900" Background="{x:Null}"
+        DataContext="{StaticResource gridViewModel}" MinWidth="400" MinHeight="375">
+
+    <Window.Resources>
+        <LinearGradientBrush x:Key="ButtonBrush" EndPoint="0.5,1" StartPoint="0.5,0">
+            <GradientStop Color="#FFDDDDDD" Offset="0"/>
+            <GradientStop Color="#FFC7C7C7" Offset="1"/>
+        </LinearGradientBrush>
+
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource ButtonBrush}"/>
+        </Style>
+        
+        <Storyboard x:Key="CircleMovement" RepeatBehavior="Forever">
+            <PointAnimationUsingPath
+                Storyboard.TargetName="MyAnimatedEllipseGeometry"
+                Storyboard.TargetProperty="Center"
+                Duration="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=AnimDuration}" 
+                RepeatBehavior="Forever"
+                PathGeometry="{Binding Container.PathGeom}"/>
+
+        </Storyboard>
+
+    </Window.Resources>
+
+    <Grid x:Name="MainGrid" Background="#00000000" Margin="0,0,2,0">
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="80px"/>
+            <ColumnDefinition Width="80px"/>
+            <ColumnDefinition Width="1*"/>
+        </Grid.ColumnDefinitions>
+        <Button Command="{Binding ClearCmd}" Grid.Column="0" Name="BtnClearLines" Content="Clear all paths" Margin="10,10,10,0" VerticalAlignment="Top" Height="25" Grid.ColumnSpan="2" Click="BtnClearLines_Click"/>
+        <Button Grid.Column="0" Name="BtnPlayAnim" IsEnabled="{Binding Container.HasSegments}" Content="Play animation" Margin="10,40,10,0" VerticalAlignment="Top" Height="25" Grid.ColumnSpan="2" Click="BtnPlayAnim_Click">
+            <Button.Triggers>
+                <EventTrigger RoutedEvent="ButtonBase.Click">
+                    <BeginStoryboard Storyboard="{StaticResource CircleMovement}"/>
+                </EventTrigger>
+            </Button.Triggers>
+        </Button>
+        <Button Tag="{Binding UndoCommand}" IsEnabled="{Binding Path=Stack.CanUndo}" Grid.Column="0" x:Name="BtnUndo" Content="Undo" Margin="10,0,2,70" VerticalAlignment="Bottom" Height="25" MouseEnter="BtnUndo_MouseEnter" Click="BtnUndo_Click"/>
+        <Button Tag="{Binding RedoCommand}" IsEnabled="{Binding Path=Stack.CanRedo}" Grid.Column="1" x:Name="BtnRedo" Content="Redo" Margin="2,0,10,70" VerticalAlignment="Bottom" Height="25" MouseEnter="BtnRedo_MouseEnter" Click="BtnRedo_Click"/>
+        <Button Command="{Binding SaveCommand}" Grid.Column="0" x:Name="BtnSave" Content="Save" Margin="10,0,2,40" VerticalAlignment="Bottom" Height="25"/>
+        <Button Command="{Binding LoadCommand}" Grid.Column="1" x:Name="BtnLoad" Content="Load" Margin="2,0,10,40" VerticalAlignment="Bottom" Height="25"/>
+
+        <TextBlock Grid.Column="0" Grid.ColumnSpan="2" Margin="10,0,10,100" TextWrapping="Wrap" Text="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=UndoRedoText, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Bottom"/>
+
+
+        <Border Grid.Column="2" BorderBrush="DimGray" BorderThickness="1.5" Margin="2,8,8,8">
+            <Grid>
+                <views:GridControl x:Name="MainGridControl"/>
+
+                <Path x:Name="CirclePath" Fill="#FF3074C5" HorizontalAlignment="Left" VerticalAlignment="Top" StrokeThickness="0">
+                    <Path.Data>
+                        <EllipseGeometry x:Name="MyAnimatedEllipseGeometry" Center="0,0" RadiusX="15" RadiusY="15" />
+                    </Path.Data>
+                </Path>
+                
+                
+            </Grid>       
+        </Border>
+        
+        
+
+        <Canvas Grid.Column="0" Grid.ColumnSpan="2" Background="Gainsboro" Margin="10,70,10,0" VerticalAlignment="Top" Height="63">
+            <TextBox Grid.Column="0" x:Name="TxtAnimLength" Height="22" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="40" TextChanged="TxtAnimLength_TextChanged" Canvas.Left="10" Canvas.Top="30" MaxLength="5"/>
+            <TextBlock Grid.Column="0" Grid.ColumnSpan="2" TextWrapping="Wrap" VerticalAlignment="Top" Height="20" Canvas.Left="10" Canvas.Top="10"><Run FontWeight="Bold" Text="Animation length "/><Run Text="(s)"/></TextBlock>
+            <TextBlock x:Name="TxtInvalid" TextWrapping="Wrap" VerticalAlignment="Top" Grid.Column="0" Grid.ColumnSpan="2" Height="22" Foreground="#FFC80000" Canvas.Left="55" Canvas.Top="30" Width="77"/>
+        </Canvas>
+
+        <Canvas Grid.Column="0" Grid.ColumnSpan="2" Background="Gainsboro" Margin="10,138,10,0" VerticalAlignment="Top" Height="86">
+            <TextBlock Text="Type of action:" VerticalAlignment="top" Grid.ColumnSpan="2" Canvas.Left="10" Canvas.Top="10" FontWeight="Bold"/>
+            <StackPanel Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Top" Height="53" Canvas.Left="10" Canvas.Top="31">
+                <StackPanel.Resources>
+                    <helpers:EnumToBoolConverter x:Key="BoolConverter"/>
+                </StackPanel.Resources>
+                <RadioButton Content="Add Line" IsChecked="{Binding Path=EdType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BoolConverter}, ConverterParameter={x:Static helpers:EditType.Line}}" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                <RadioButton Content="Add Bezier" IsChecked="{Binding Path=EdType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BoolConverter}, ConverterParameter={x:Static helpers:EditType.Bezier}}" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                <RadioButton Content="Add Figure" IsChecked="{Binding Path=EdType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BoolConverter}, ConverterParameter={x:Static helpers:EditType.AddFigure}}" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+            </StackPanel>
+        </Canvas>
+
+        <Button Command="{Binding ExportCmd}" Grid.Column="0" Grid.ColumnSpan="2" Content="Export to Unity" Margin="10,0,38,10" VerticalAlignment="Bottom" Height="25">
+            <Button.Background>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="#FFDDEFFF" Offset="0"/>
+                    <GradientStop Color="#FFA0BACF" Offset="1"/>
+                </LinearGradientBrush>
+            </Button.Background>
+        </Button>
+        <Button Content="?" x:Name="BtnHelp" Grid.Column="1" Margin="47,0,10,10" VerticalAlignment="Bottom" Width="23" Height="25" Background="{DynamicResource ButtonBrush}" Click="BtnHelp_Click"/>
+
+    </Grid>
+
+
+</Window>
